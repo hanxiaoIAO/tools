@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.jar.JarEntry;
@@ -13,7 +14,7 @@ import java.util.jar.JarFile;
 public class JarTool {
 	String path;
 	List<JarFile> jarFileList;
-	HashMap<String,List<String>> mapJarFileNameToClasses;
+	HashMap<String,List<String>> mapJarFileToClasses;//key:jar包相对路径；value:jar包中所包含类的类名
 	
 	public JarTool(String path){
 		this.path = path;
@@ -28,12 +29,12 @@ public class JarTool {
 	}
 	
 	public void findClass(String className){
-		if(mapJarFileNameToClasses == null){
-			mapJarFileNameToClasses = new HashMap<String ,List<String>>();
+		if(mapJarFileToClasses == null){
+			mapJarFileToClasses = new HashMap<String ,List<String>>();
 			initMapJarFileNameToClasses();
 		}
 		
-		for(Entry<String, List<String>> entry:mapJarFileNameToClasses.entrySet()){
+		for(Entry<String, List<String>> entry:mapJarFileToClasses.entrySet()){
 			for(String tempClassName:entry.getValue()){
 				if(tempClassName.toLowerCase().contains(className.toLowerCase())){
 					System.out.println(entry.getKey()+"\n"+tempClassName+"\n");
@@ -43,22 +44,28 @@ public class JarTool {
 	}
 	
 	public void findJar_HasRepeatedClass(){
-		if(mapJarFileNameToClasses == null){
-			mapJarFileNameToClasses = new HashMap<String ,List<String>>();
+		if(mapJarFileToClasses == null){
+			mapJarFileToClasses = new HashMap<String ,List<String>>();
 			initMapJarFileNameToClasses();
 		}
 		
-		HashMap<String,String> mapClassToJarName = new HashMap<String,String>();
-		for(Entry<String, List<String>> entry:mapJarFileNameToClasses.entrySet()){
-			String jarPath = entry.getKey();
+		HashMap<String,String> mapClassToJarfile = new HashMap<String,String>();
+		HashMap<String,String> mapRepeatClassToJarfile = new HashMap<String,String>();
+		for(Entry<String, List<String>> entry:mapJarFileToClasses.entrySet()){
 			List<String> classesNames = entry.getValue();
 			for(String className:classesNames){
-				if(mapClassToJarName.containsKey(className)){
-					jarPath = mapClassToJarName.get(className)+"&&"+jarPath;
-					System.out.println(jarPath);
+				String jarPath = entry.getKey();
+				if(mapClassToJarfile.containsKey(className)){
+					jarPath = mapClassToJarfile.get(className)+"&&"+jarPath;
+					mapRepeatClassToJarfile.put(className, jarPath);
 				}
-				mapClassToJarName.put(className, jarPath);
+				mapClassToJarfile.put(className, jarPath);
 			}
+		}
+		Iterator<Entry<String, String>> itEntry = mapRepeatClassToJarfile.entrySet().iterator();
+		while(itEntry.hasNext()){
+			Entry<String, String> entry = itEntry.next();
+			System.out.println("clsaaName:"+entry.getKey()+"\n"+"jarpath:"+entry.getValue()+"\n\n");
 		}
 	}
 
@@ -66,7 +73,7 @@ public class JarTool {
 		List<JarFile> jarFileList = getjarFileList();
 		for (JarFile jarFile : jarFileList) {
 			Enumeration<JarEntry> jarEntrys = jarFile.entries();
-			String jarName = jarFile.getName();
+			String jarName = jarFile.getName().replace(path, "");
 			List<String> classList = new ArrayList<String>();
 			while (jarEntrys.hasMoreElements()) {
 				JarEntry jarEntry = jarEntrys.nextElement();
@@ -80,7 +87,7 @@ public class JarTool {
 					}
 				}
 			}
-			mapJarFileNameToClasses.put(jarName, classList);
+			mapJarFileToClasses.put(jarName, classList);
 		}
 	}
 
